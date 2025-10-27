@@ -6,10 +6,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Detectar si estamos en Railway
-IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT'))
-# Otra forma de detectar Railway
-IS_RAILWAY = IS_RAILWAY or bool(os.environ.get('PORT'))
+# Detectar si estamos en Railway - verificar múltiples variables
+RAILWAY_PORT = os.environ.get('PORT')
+IS_RAILWAY = bool(RAILWAY_PORT)
 
 # Ruta donde guardar los archivos
 if IS_RAILWAY:
@@ -21,10 +20,15 @@ else:
     JIRA_FOLDER = DESKTOP_PATH / "JiraControlM"
 
 # Crear la carpeta si no existe al iniciar
-JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
+try:
+    JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
+    print(f"✓ Carpeta creada/verificada: {JIRA_FOLDER}")
+except Exception as e:
+    print(f"✗ Error creando carpeta: {e}")
 
 print(f"JIRA_FOLDER: {JIRA_FOLDER}")
 print(f"IS_RAILWAY: {IS_RAILWAY}")
+print(f"PORT: {RAILWAY_PORT}")
 
 @app.route('/', methods=['GET'])
 def health_check():
@@ -117,9 +121,9 @@ def list_files():
         }), 500
 
 if __name__ == '__main__':
-    # Obtener el puerto de la variable de entorno o usar 5000 por defecto
+    # Solo para desarrollo local
     port = int(os.environ.get('PORT', 5000))
-    host = '0.0.0.0'  # Escuchar en todas las interfaces
+    host = '0.0.0.0'
     
     print(f"\n>>> API iniciada en http://{host}:{port}")
     print(f">>> Carpeta de guardado: {JIRA_FOLDER}")
@@ -128,10 +132,6 @@ if __name__ == '__main__':
     print(f"   GET  /")
     print(f"   POST /save-json")
     print(f"   GET  /list-files")
-    print("\n>>> Ejemplo de uso:")
-    print(f'   curl -X POST /save-json')
-    print(f'        -H "Content-Type: application/json"')
-    print(f'        -d \'{{"filename":"mi_archivo","jsonData":{{"clave":"valor"}}}}\'')
     print()
     app.run(host=host, port=port, debug=False)
 

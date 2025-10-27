@@ -46,15 +46,29 @@ def health():
 @app.route('/save-json', methods=['GET', 'POST', 'PUT', 'OPTIONS'])
 def save_json():
     try:
+        # RAILWAY HACK: Railway está convirtiendo POST a GET, así que debemos detectar los datos en request.args
         logger.info(f"Request method: {request.method}")
         logger.info(f"Request headers: {dict(request.headers)}")
+        logger.info(f"Request args: {dict(request.args)}")
+        logger.info(f"Request form: {dict(request.form)}")
         
         # Para OPTIONS request (CORS preflight)
         if request.method == 'OPTIONS':
             return '', 200
         
         data = request.get_json(silent=True)
-        logger.info(f"Request data: {data}")
+        logger.info(f"Request data from JSON: {data}")
+        
+        # Si no hay data JSON, intentar obtener de query params (para Railway que convierte a GET)
+        if not data and request.args:
+            try:
+                import urllib.parse
+                data_str = request.args.get('data') or request.args.get('body')
+                if data_str:
+                    data = json.loads(urllib.parse.unquote(data_str))
+                    logger.info(f"Data from query params: {data}")
+            except Exception as e:
+                logger.error(f"Error parsing query data: {e}")
         
         # Si no hay data en POST, intentar obtener de form data
         if not data and request.method in ['POST', 'PUT']:

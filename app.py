@@ -23,9 +23,9 @@ else:
 print(f"DEBUG - Intentando crear carpeta: {JIRA_FOLDER}")
 try:
     JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
-    print(f"✓ Carpeta creada/verificada: {JIRA_FOLDER}")
+    print(f"OK - Carpeta creada/verificada: {JIRA_FOLDER}")
 except Exception as e:
-    print(f"✗ Error creando carpeta: {e}")
+    print(f"ERROR - Error creando carpeta: {e}")
     import traceback
     traceback.print_exc()
 

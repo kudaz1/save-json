@@ -157,13 +157,30 @@ def upload():
             except Exception as e:
                 logger.error(f"Error parsing raw body: {e}")
         
-        # 3. Intentar form data
+        # 3. Intentar form data (x-www-form-urlencoded o multipart)
         if not data:
             form_data = request.form.to_dict()
             if form_data:
                 data = form_data
+                # Si hay jsonData como string, parsearlo
+                if 'jsonData' in data and isinstance(data['jsonData'], str):
+                    try:
+                        data['jsonData'] = json.loads(data['jsonData'])
+                    except:
+                        pass
         
-        # 4. Intentar query params
+        # 4. Intentar leer del body como texto plano y parsearlo como JSON
+        if not data:
+            try:
+                body_text = request.get_data(as_text=True)
+                if body_text and body_text.strip():
+                    logger.info(f"Body text: {body_text[:200]}...")  # Log primeros 200 chars
+                    data = json.loads(body_text)
+                    logger.info(f"Parsed data from body text: {data}")
+            except Exception as e:
+                logger.error(f"Error parsing body text: {e}")
+        
+        # 5. Intentar query params
         if not data and request.args:
             data = dict(request.args)
         

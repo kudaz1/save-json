@@ -7,7 +7,7 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Detectar si estamos en Railway o en local
-IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT') is not None
+IS_RAILWAY = os.environ.get('PORT') is not None
 
 # Ruta donde guardar los archivos
 if IS_RAILWAY:

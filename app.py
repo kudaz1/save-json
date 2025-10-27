@@ -146,5 +146,6 @@ if __name__ == '__main__':
     
     # Usar servidor básico que funciona en Railway
     print(">>> Iniciando servidor...")
-    app.run(host=host, port=port, debug=False, threaded=True)
+    # Railway requires this specific configuration
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', port)), debug=False, use_reloader=False)
 

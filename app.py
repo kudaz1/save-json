@@ -20,23 +20,34 @@ else:
     JIRA_FOLDER = DESKTOP_PATH / "JiraControlM"
 
 # Crear la carpeta si no existe al iniciar
+print(f"DEBUG - Intentando crear carpeta: {JIRA_FOLDER}")
 try:
     JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
     print(f"✓ Carpeta creada/verificada: {JIRA_FOLDER}")
 except Exception as e:
     print(f"✗ Error creando carpeta: {e}")
+    import traceback
+    traceback.print_exc()
 
 print(f"JIRA_FOLDER: {JIRA_FOLDER}")
 print(f"IS_RAILWAY: {IS_RAILWAY}")
 print(f"PORT: {RAILWAY_PORT}")
+print(f"JIRA_FOLDER exists: {JIRA_FOLDER.exists()}")
+print(f"JIRA_FOLDER is_dir: {JIRA_FOLDER.is_dir()}")
 
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({
         "status": "OK",
         "message": "API está funcionando correctamente",
-        "storage_folder": str(JIRA_FOLDER)
+        "storage_folder": str(JIRA_FOLDER),
+        "is_railway": IS_RAILWAY,
+        "port": int(os.environ.get('PORT', 5000))
     })
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "healthy"}), 200
 
 @app.route('/save-json', methods=['POST'])
 def save_json():

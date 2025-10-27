@@ -1,2 +1,2 @@
-web: gunicorn --config gunicorn.conf.py app:app
+web: gunicorn -k gevent --bind=0.0.0.0:$PORT app:app
 

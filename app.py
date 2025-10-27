@@ -56,8 +56,23 @@ def save_json():
         if request.method == 'OPTIONS':
             return '', 200
         
+        # Intentar obtener data del body RAW (para cuando Postman envía POST pero el proxy lo convierte a GET)
+        data = None
+        
+        # Primero intentar JSON normal
         data = request.get_json(silent=True)
         logger.info(f"Request data from JSON: {data}")
+        
+        # Si es GET, intentar leer el body directamente
+        if not data and request.method == 'GET':
+            try:
+                raw_data = request.get_data(as_text=True)
+                logger.info(f"Raw body data: {raw_data}")
+                if raw_data:
+                    data = json.loads(raw_data)
+                    logger.info(f"Parsed data from raw body: {data}")
+            except Exception as e:
+                logger.error(f"Error parsing raw body: {e}")
         
         # Si no hay data JSON, intentar obtener de query params (para Railway que convierte a GET)
         if not data and request.args:

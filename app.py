@@ -69,6 +69,26 @@ def save_json():
         if request.method == 'OPTIONS':
             return '', 200
         
+        # SOLUCION RAILWAY: Leer primero de query params ya que Railway convierte POST a GET
+        # y elimina el body. Esta es la única forma de que funcione en Railway
+        if request.args:
+            logger.info(f"Reading from query params: {dict(request.args)}")
+            filename = request.args.get('filename')
+            jsonData_str = request.args.get('jsonData')
+            
+            if filename and jsonData_str:
+                try:
+                    jsonData = json.loads(jsonData_str)
+                    return jsonify({
+                        "success": True,
+                        "message": "Archivo guardado exitosamente",
+                        "filename": filename,
+                        "path": str(save_file_with_data(filename, jsonData))
+                    }), 200
+                except Exception as e:
+                    logger.error(f"Error parsing JSON from query params: {e}")
+                    return jsonify({"error": "Error parsing JSON", "details": str(e)}), 400
+        
         # Intentar obtener data del body RAW (para cuando Postman envía POST pero el proxy lo convierte a GET)
         data = None
         

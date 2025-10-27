@@ -83,11 +83,19 @@ def health():
 def save_json():
     """
     Endpoint principal para guardar archivos JSON.
-    NOTA: Railway convierte POST a GET y elimina el body.
-    Por lo tanto, los datos deben enviarse como query parameters.
-    Ejemplo: ?filename=test.json&jsonData={"key":"value"}
+    
+    Body esperado (JSON):
+    {
+      "filename": "nombre_archivo",
+      "jsonData": {...},
+      "token": "tu_token_controlm",  // OPCIONAL: Si se envía, automáticamente se envía a Control-M
+      "controlm_api": "https://..."   // OPCIONAL: URL de Control-M (por defecto usa la de la imagen)
+    }
     """
     try:
+        # Autenticación por token (si se envía)
+        token = None
+        controlm_api = 'https://controlms1de01:8446/automation-api/deploy'
         # RAILWAY HACK: Railway está convirtiendo POST a GET, así que debemos detectar los datos en request.args
         logger.info(f"Request method: {request.method}")
         logger.info(f"Request headers: {dict(request.headers)}")
@@ -162,23 +170,63 @@ def save_json():
             logger.error(f"{error_msg} - Method: {request.method} - Data: {data}")
             return jsonify({"error": error_msg, "received_method": request.method}), 400
         
+        # Extraer token y controlm_api si se envían
+        token = data.get('token')
+        controlm_api_url = data.get('controlm_api', 'https://controlms1de01:8446/automation-api/deploy')
+        
         filename = data['filename']
         if not filename.endswith('.json'):
             filename = filename + '.json'
         
         file_path = JIRA_FOLDER / filename
         
+        # Guardar archivo
         with open(file_path, 'w', encoding='utf-8') as f:
             json.dump(data['jsonData'], f, indent=2, ensure_ascii=False)
         
         logger.info(f"File saved successfully: {file_path}")
         
-        return jsonify({
+        response_data = {
             "success": True,
             "message": "Archivo guardado exitosamente",
             "filename": filename,
             "path": str(file_path)
-        }), 200
+        }
+        
+        # Si se envió token, automáticamente enviar a Control-M
+        if token:
+            logger.info("Token detectado, enviando automáticamente a Control-M...")
+            try:
+                import requests
+                
+                headers = {'Authorization': f'Bearer {token}'}
+                
+                with open(file_path, 'rb') as f:
+                    files = {'definitionsFile': (filename, f, 'application/json')}
+                    
+                    controlm_response = requests.post(
+                        controlm_api_url,
+                        files=files,
+                        headers=headers,
+                        verify=False,
+                        timeout=30
+                    )
+                
+                logger.info(f"Control-M response: {controlm_response.status_code}")
+                
+                if controlm_response.status_code in [200, 201]:
+                    response_data['controlm_status'] = 'success'
+                    response_data['controlm_response'] = controlm_response.text[:500]
+                else:
+                    response_data['controlm_status'] = 'error'
+                    response_data['controlm_error'] = controlm_response.text[:500]
+                    
+            except Exception as e:
+                logger.error(f"Error enviando a Control-M: {e}")
+                response_data['controlm_status'] = 'error'
+                response_data['controlm_error'] = str(e)
+        
+        return jsonify(response_data), 200
         
     except Exception as e:
         logger.error(f"Error saving file: {str(e)}")
@@ -403,6 +451,90 @@ def download_file(filename):
     except Exception as e:
         return jsonify({
             "error": "Error downloading file",
+            "details": str(e)
+        }), 500
+
+@app.route('/deploy-to-controlm/<filename>', methods=['POST'])
+def deploy_to_controlm(filename):
+    """Endpoint para enviar archivo a Control-M con token"""
+    try:
+        logger.info(f"Deploy to Control-M request for: {filename}")
+        logger.info(f"Request data: {request.get_json()}")
+        
+        # Obtener token del body
+        data = request.get_json()
+        if not data or 'token' not in data:
+            return jsonify({
+                "error": "Token is required",
+                "required_fields": ["token"]
+            }), 400
+        
+        token = data['token']
+        
+        # Control-M API endpoint
+        controlm_api = data.get('controlm_api', 'https://controlms1de01:8446/automation-api/deploy')
+        
+        # Verificar que el archivo existe
+        if not filename.endswith('.json'):
+            filename = filename + '.json'
+        
+        file_path = JIRA_FOLDER / filename
+        
+        if not file_path.exists():
+            return jsonify({"error": "File not found"}), 404
+        
+        logger.info(f"File found: {file_path}")
+        logger.info(f"Sending to Control-M API: {controlm_api}")
+        
+        # Enviar archivo a Control-M usando form-data
+        import requests
+        
+        headers = {
+            'Authorization': f'Bearer {token}'
+        }
+        
+        with open(file_path, 'rb') as f:
+            files = {
+                'definitionsFile': (filename, f, 'application/json')
+            }
+            
+            try:
+                controlm_response = requests.post(
+                    controlm_api,
+                    files=files,
+                    headers=headers,
+                    verify=False,
+                    timeout=30
+                )
+                
+                logger.info(f"Control-M response status: {controlm_response.status_code}")
+                logger.info(f"Control-M response: {controlm_response.text[:500]}")
+                
+                if controlm_response.status_code in [200, 201]:
+                    return jsonify({
+                        "success": True,
+                        "message": "File deployed successfully to Control-M",
+                        "filename": filename,
+                        "controlm_response": controlm_response.text[:500]
+                    }), 200
+                else:
+                    return jsonify({
+                        "error": "Control-M API error",
+                        "status_code": controlm_response.status_code,
+                        "response": controlm_response.text[:500]
+                    }), controlm_response.status_code
+                    
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling Control-M API: {str(e)}")
+                return jsonify({
+                    "error": "Failed to connect to Control-M",
+                    "details": str(e)
+                }), 500
+        
+    except Exception as e:
+        logger.error(f"Error in deploy_to_controlm: {str(e)}")
+        return jsonify({
+            "error": "Error sending to Control-M",
             "details": str(e)
         }), 500
 

@@ -114,6 +114,65 @@ def api_save():
     """Endpoint alternativo para guardar archivos"""
     return save_json()
 
+@app.route('/upload', methods=['POST', 'PUT', 'GET'])
+def upload():
+    """Endpoint simple que fuerza el método POST"""
+    try:
+        logger.info(f"UPLOAD endpoint - Request method: {request.method}")
+        logger.info(f"Request headers: {dict(request.headers)}")
+        
+        # Intentar obtener data de múltiples formas
+        data = request.get_json(silent=True) or request.form.to_dict() or {}
+        
+        if request.args:
+            data.update(dict(request.args))
+        
+        logger.info(f"Request data: {data}")
+        
+        if not data or 'filename' not in data:
+            return jsonify({
+                "error": "Faltan campos requeridos",
+                "received_data": data,
+                "method": request.method
+            }), 400
+        
+        filename = data.get('filename')
+        jsonData = data.get('jsonData')
+        
+        if not jsonData:
+            return jsonify({
+                "error": "Falta jsonData",
+                "received_data": data
+            }), 400
+        
+        if not filename.endswith('.json'):
+            filename = filename + '.json'
+        
+        file_path = JIRA_FOLDER / filename
+        
+        # Si jsonData es string, parsearlo
+        if isinstance(jsonData, str):
+            jsonData = json.loads(jsonData)
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(jsonData, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"File saved successfully: {file_path}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Archivo guardado exitosamente",
+            "filename": filename,
+            "path": str(file_path)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error uploading file: {str(e)}")
+        return jsonify({
+            "error": "Error al guardar el archivo",
+            "details": str(e)
+        }), 500
+
 @app.route('/list-files', methods=['GET'])
 def list_files():
     """Endpoint adicional para listar los archivos guardados"""

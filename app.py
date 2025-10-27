@@ -121,7 +121,6 @@ def list_files():
         }), 500
 
 if __name__ == '__main__':
-    # Para desarrollo local y Railway sin gunicorn
     port = int(os.environ.get('PORT', 5000))
     host = '0.0.0.0'
     
@@ -133,6 +132,11 @@ if __name__ == '__main__':
     print(f"   POST /save-json")
     print(f"   GET  /list-files")
     print()
-    # Usar threaded=True para producción
-    app.run(host=host, port=port, debug=False, threaded=True)
+    
+    # Usar waitress para producción (mejor que servidor de desarrollo)
+    if IS_RAILWAY:
+        from waitress import serve
+        serve(app, host=host, port=port, threads=4)
+    else:
+        app.run(host=host, port=port, debug=True)
 

@@ -385,4 +385,25 @@ def list_files():
             "details": str(e)
         }), 500
 
+@app.route('/download/<filename>', methods=['GET'])
+def download_file(filename):
+    """Endpoint para descargar archivos guardados"""
+    try:
+        if not filename.endswith('.json'):
+            filename = filename + '.json'
+        
+        file_path = JIRA_FOLDER / filename
+        
+        if not file_path.exists():
+            return jsonify({"error": "File not found"}), 404
+        
+        from flask import send_file
+        return send_file(str(file_path), as_attachment=True)
+        
+    except Exception as e:
+        return jsonify({
+            "error": "Error downloading file",
+            "details": str(e)
+        }), 500
+
 # Railway uses gunicorn, no need for if __name__ == '__main__' block

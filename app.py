@@ -129,18 +129,43 @@ def api_save():
     """Endpoint alternativo para guardar archivos"""
     return save_json()
 
-@app.route('/upload', methods=['POST', 'PUT', 'GET'])
+@app.route('/upload', methods=['POST', 'PUT', 'GET', 'OPTIONS'])
 def upload():
     """Endpoint simple que fuerza el método POST"""
     try:
         logger.info(f"UPLOAD endpoint - Request method: {request.method}")
         logger.info(f"Request headers: {dict(request.headers)}")
         
-        # Intentar obtener data de múltiples formas
-        data = request.get_json(silent=True) or request.form.to_dict() or {}
+        # Para OPTIONS request (CORS preflight)
+        if request.method == 'OPTIONS':
+            return '', 200
         
-        if request.args:
-            data.update(dict(request.args))
+        # Intentar obtener data de múltiples formas
+        data = None
+        
+        # 1. Intentar JSON normal
+        data = request.get_json(silent=True)
+        
+        # 2. Si es GET, intentar leer el body raw
+        if not data and request.method == 'GET':
+            try:
+                raw_data = request.get_data(as_text=True)
+                logger.info(f"Raw body data: {raw_data}")
+                if raw_data:
+                    data = json.loads(raw_data)
+                    logger.info(f"Parsed data from raw body: {data}")
+            except Exception as e:
+                logger.error(f"Error parsing raw body: {e}")
+        
+        # 3. Intentar form data
+        if not data:
+            form_data = request.form.to_dict()
+            if form_data:
+                data = form_data
+        
+        # 4. Intentar query params
+        if not data and request.args:
+            data = dict(request.args)
         
         logger.info(f"Request data: {data}")
         

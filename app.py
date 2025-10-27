@@ -52,6 +52,19 @@ def health_check():
         "message": "API esta funcionando correctamente"
     }), 200
 
+@app.route('/test', methods=['GET', 'POST'])
+def test():
+    """Endpoint de prueba para ver qué recibe Railway"""
+    return jsonify({
+        "method": request.method,
+        "has_json": request.is_json,
+        "headers": dict(request.headers),
+        "args": dict(request.args),
+        "form": dict(request.form),
+        "json_data": request.get_json(silent=True),
+        "raw_body": request.get_data(as_text=True)[:200] if request.get_data(as_text=True) else None
+    }), 200
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "healthy"}), 200

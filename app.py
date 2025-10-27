@@ -24,6 +24,9 @@ IS_RAILWAY = bool(RAILWAY_PORT)
 if IS_RAILWAY:
     # En Railway, guardar en el filesystem del contenedor
     JIRA_FOLDER = Path('/app/storage')
+elif os.environ.get('RENDER'):
+    # En Render, usar tmp para escritura
+    JIRA_FOLDER = Path('/tmp/storage')
 else:
     # En local, guardar en el escritorio
     DESKTOP_PATH = Path.home() / "Desktop"

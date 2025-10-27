@@ -144,15 +144,7 @@ if __name__ == '__main__':
     print(f"   GET  /list-files")
     print()
     
-    # Intentar usar waitress para producción, sino usar servidor de desarrollo
-    if IS_RAILWAY:
-        try:
-            from waitress import serve
-            print(">>> Usando Waitress para producción")
-            serve(app, host=host, port=port, threads=4)
-        except ImportError as e:
-            print(f">>> Waitress no disponible, usando servidor de desarrollo: {e}")
-            app.run(host=host, port=port, debug=False, threaded=True)
-    else:
-        app.run(host=host, port=port, debug=True)
+    # Usar servidor básico que funciona en Railway
+    print(">>> Iniciando servidor...")
+    app.run(host=host, port=port, debug=False, threaded=True)
 

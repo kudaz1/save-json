@@ -1,10 +1,17 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import json
 import os
 from pathlib import Path
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
+CORS(app)  # Habilitar CORS para todas las rutas
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Port configuration for Railway
 port = os.environ.get('PORT', '8080')
@@ -36,27 +43,62 @@ def health_check():
 def health():
     return jsonify({"status": "healthy"}), 200
 
-@app.route('/save-json', methods=['POST'])
+@app.route('/save-json', methods=['GET', 'POST', 'PUT', 'OPTIONS'])
 def save_json():
-    data = request.get_json()
-    
-    if not data or 'filename' not in data or 'jsonData' not in data:
-        return jsonify({"error": "Faltan campos requeridos"}), 400
-    
-    filename = data['filename']
-    if not filename.endswith('.json'):
-        filename = filename + '.json'
-    
-    file_path = JIRA_FOLDER / filename
-    
-    with open(file_path, 'w', encoding='utf-8') as f:
-        json.dump(data['jsonData'], f, indent=2, ensure_ascii=False)
-    
-    return jsonify({
-        "success": True,
-        "message": "Archivo guardado exitosamente",
-        "filename": filename
-    }), 200
+    try:
+        logger.info(f"Request method: {request.method}")
+        logger.info(f"Request headers: {dict(request.headers)}")
+        
+        # Para OPTIONS request (CORS preflight)
+        if request.method == 'OPTIONS':
+            return '', 200
+        
+        data = request.get_json(silent=True)
+        logger.info(f"Request data: {data}")
+        
+        # Si no hay data en POST, intentar obtener de form data
+        if not data and request.method in ['POST', 'PUT']:
+            data = request.form.to_dict()
+            if data and 'jsonData' in data:
+                try:
+                    data['jsonData'] = json.loads(data['jsonData'])
+                except:
+                    pass
+        
+        if not data or 'filename' not in data or 'jsonData' not in data:
+            error_msg = "Faltan campos requeridos"
+            logger.error(f"{error_msg} - Method: {request.method} - Data: {data}")
+            return jsonify({"error": error_msg, "received_method": request.method}), 400
+        
+        filename = data['filename']
+        if not filename.endswith('.json'):
+            filename = filename + '.json'
+        
+        file_path = JIRA_FOLDER / filename
+        
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data['jsonData'], f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"File saved successfully: {file_path}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Archivo guardado exitosamente",
+            "filename": filename,
+            "path": str(file_path)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error saving file: {str(e)}")
+        return jsonify({
+            "error": "Error al guardar el archivo",
+            "details": str(e)
+        }), 500
+
+@app.route('/api/save', methods=['POST', 'PUT'])
+def api_save():
+    """Endpoint alternativo para guardar archivos"""
+    return save_json()
 
 @app.route('/list-files', methods=['GET'])
 def list_files():
@@ -90,4 +132,3 @@ def list_files():
         }), 500
 
 # Railway uses gunicorn, no need for if __name__ == '__main__' block
-

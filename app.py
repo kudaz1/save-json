@@ -32,6 +32,19 @@ else:
 # Crear la carpeta si no existe al iniciar
 JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
 
+def save_file_with_data(filename, jsonData):
+    """Helper function to save file with data"""
+    if not filename.endswith('.json'):
+        filename = filename + '.json'
+    
+    file_path = JIRA_FOLDER / filename
+    
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(jsonData, f, indent=2, ensure_ascii=False)
+    
+    logger.info(f"File saved successfully: {file_path}")
+    return file_path
+
 @app.route('/', methods=['GET'])
 def health_check():
     return jsonify({
@@ -140,6 +153,28 @@ def upload():
         # Para OPTIONS request (CORS preflight)
         if request.method == 'OPTIONS':
             return '', 200
+        
+        # SOLUCION: Leer de query params ya que Railway convierte POST a GET
+        # Y elimina el body. Esta es la única forma de que funcione en Railway
+        if request.args:
+            logger.info(f"Reading from query params: {dict(request.args)}")
+            filename = request.args.get('filename')
+            jsonData_str = request.args.get('jsonData')
+            
+            if filename and jsonData_str:
+                try:
+                    jsonData = json.loads(jsonData_str)
+                    return jsonify({
+                        "success": True,
+                        "message": "Archivo guardado exitosamente",
+                        "filename": filename,
+                        "path": str(save_file_with_data(filename, jsonData))
+                    }), 200
+                except Exception as e:
+                    logger.error(f"Error parsing JSON from query params: {e}")
+                    return jsonify({"error": "Error parsing JSON", "details": str(e)}), 400
+            else:
+                return jsonify({"error": "Missing filename or jsonData in query params"}), 400
         
         # Intentar obtener data de múltiples formas
         data = None

@@ -6,6 +6,9 @@ from datetime import datetime
 
 app = Flask(__name__)
 
+# Port configuration for Railway
+port = os.environ.get('PORT', '8080')
+
 # Detectar si estamos en Railway - verificar múltiples variables
 RAILWAY_PORT = os.environ.get('PORT')
 IS_RAILWAY = bool(RAILWAY_PORT)

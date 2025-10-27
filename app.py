@@ -33,7 +33,14 @@ else:
     JIRA_FOLDER = DESKTOP_PATH / "JiraControlM"
 
 # Crear la carpeta si no existe al iniciar
-JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
+try:
+    JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
+except Exception as e:
+    logger.error(f"Error creating directory {JIRA_FOLDER}: {e}")
+    # En caso de error, intentar con una ruta alternativa
+    JIRA_FOLDER = Path('.') / 'storage'
+    JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Using alternative path: {JIRA_FOLDER}")
 
 def save_file_with_data(filename, jsonData):
     """Helper function to save file with data"""

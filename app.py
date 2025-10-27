@@ -6,9 +6,17 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Ruta al escritorio
-DESKTOP_PATH = Path.home() / "Desktop"
-JIRA_FOLDER = DESKTOP_PATH / "JiraControlM"
+# Detectar si estamos en Railway o en local
+IS_RAILWAY = os.environ.get('RAILWAY_ENVIRONMENT') is not None
+
+# Ruta donde guardar los archivos
+if IS_RAILWAY:
+    # En Railway, guardar en el filesystem del contenedor
+    JIRA_FOLDER = Path('/app/storage')
+else:
+    # En local, guardar en el escritorio
+    DESKTOP_PATH = Path.home() / "Desktop"
+    JIRA_FOLDER = DESKTOP_PATH / "JiraControlM"
 
 @app.route('/', methods=['GET'])
 def health_check():
@@ -101,16 +109,21 @@ def list_files():
         }), 500
 
 if __name__ == '__main__':
-    print("\n>>> API iniciada en http://localhost:5000")
+    # Obtener el puerto de la variable de entorno o usar 5000 por defecto
+    port = int(os.environ.get('PORT', 5000))
+    host = '0.0.0.0'  # Escuchar en todas las interfaces
+    
+    print(f"\n>>> API iniciada en http://{host}:{port}")
     print(f">>> Carpeta de guardado: {JIRA_FOLDER}")
+    print(f">>> Entorno: {'Railway' if IS_RAILWAY else 'Local'}")
     print("\n>>> Endpoints disponibles:")
-    print(f"   GET  http://localhost:5000/")
-    print(f"   POST http://localhost:5000/save-json")
-    print(f"   GET  http://localhost:5000/list-files")
+    print(f"   GET  /")
+    print(f"   POST /save-json")
+    print(f"   GET  /list-files")
     print("\n>>> Ejemplo de uso:")
-    print(f'   curl -X POST http://localhost:5000/save-json')
+    print(f'   curl -X POST /save-json')
     print(f'        -H "Content-Type: application/json"')
     print(f'        -d \'{{"filename":"mi_archivo","jsonData":{{"clave":"valor"}}}}\'')
     print()
-    app.run(debug=True, port=5000)
+    app.run(host=host, port=port, debug=False)
 

@@ -87,9 +87,9 @@ def save_json():
     Body esperado (JSON):
     {
       "filename": "nombre_archivo",
-      "jsonData": {...},
-      "token": "tu_token_controlm",  // OPCIONAL: Si se envía, automáticamente se envía a Control-M
-      "controlm_api": "https://..."   // OPCIONAL: URL de Control-M (por defecto usa la de la imagen)
+      "token": "tu_token_controlm",     // OPCIONAL: Si se envía, automáticamente se envía a Control-M
+      "controlm_api": "https://...",    // OPCIONAL: URL de Control-M (por defecto usa la de la imagen)
+      "jsonData": {...}
     }
     """
     try:

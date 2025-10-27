@@ -6,8 +6,10 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-# Detectar si estamos en Railway o en local
-IS_RAILWAY = os.environ.get('PORT') is not None
+# Detectar si estamos en Railway
+IS_RAILWAY = bool(os.environ.get('RAILWAY_ENVIRONMENT'))
+# Otra forma de detectar Railway
+IS_RAILWAY = IS_RAILWAY or bool(os.environ.get('PORT'))
 
 # Ruta donde guardar los archivos
 if IS_RAILWAY:
@@ -17,6 +19,12 @@ else:
     # En local, guardar en el escritorio
     DESKTOP_PATH = Path.home() / "Desktop"
     JIRA_FOLDER = DESKTOP_PATH / "JiraControlM"
+
+# Crear la carpeta si no existe al iniciar
+JIRA_FOLDER.mkdir(parents=True, exist_ok=True)
+
+print(f"JIRA_FOLDER: {JIRA_FOLDER}")
+print(f"IS_RAILWAY: {IS_RAILWAY}")
 
 @app.route('/', methods=['GET'])
 def health_check():

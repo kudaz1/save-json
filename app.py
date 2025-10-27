@@ -71,6 +71,12 @@ def health():
 
 @app.route('/save-json', methods=['GET', 'POST', 'PUT', 'OPTIONS'])
 def save_json():
+    """
+    Endpoint principal para guardar archivos JSON.
+    NOTA: Railway convierte POST a GET y elimina el body.
+    Por lo tanto, los datos deben enviarse como query parameters.
+    Ejemplo: ?filename=test.json&jsonData={"key":"value"}
+    """
     try:
         # RAILWAY HACK: Railway está convirtiendo POST a GET, así que debemos detectar los datos en request.args
         logger.info(f"Request method: {request.method}")
@@ -175,6 +181,43 @@ def save_json():
 def api_save():
     """Endpoint alternativo para guardar archivos"""
     return save_json()
+
+@app.route('/save', methods=['GET'])
+def save_simple():
+    """Endpoint simplificado SOLO con query params para Railway"""
+    try:
+        filename = request.args.get('filename')
+        jsonData_str = request.args.get('jsonData')
+        
+        if not filename or not jsonData_str:
+            return jsonify({
+                "error": "Missing required parameters",
+                "required": ["filename", "jsonData"]
+            }), 400
+        
+        try:
+            jsonData = json.loads(jsonData_str)
+        except json.JSONDecodeError as e:
+            return jsonify({
+                "error": "Invalid JSON in jsonData parameter",
+                "details": str(e)
+            }), 400
+        
+        file_path = save_file_with_data(filename, jsonData)
+        
+        return jsonify({
+            "success": True,
+            "message": "Archivo guardado exitosamente",
+            "filename": filename if filename.endswith('.json') else filename + '.json',
+            "path": str(file_path)
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Error in /save endpoint: {str(e)}")
+        return jsonify({
+            "error": "Error al guardar el archivo",
+            "details": str(e)
+        }), 500
 
 @app.route('/upload', methods=['POST', 'PUT', 'GET', 'OPTIONS'])
 def upload():

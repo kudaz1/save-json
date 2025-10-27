@@ -195,14 +195,37 @@ def save_json():
         
         # Si se envió token, automáticamente enviar a Control-M
         if token:
-            logger.info("Token detectado, enviando automáticamente a Control-M...")
+            logger.info("="*80)
+            logger.info("Enviando archivo a Control-M...")
+            logger.info("="*80)
+            logger.info(f"Control-M API URL: {controlm_api_url}")
+            logger.info(f"Filename: {filename}")
+            logger.info(f"Token: {token[:20]}..." if len(token) > 20 else f"Token: {token}")
+            logger.info(f"Request format: form-data")
+            logger.info(f"Field name: definitionsFile")
+            logger.info(f"Content-Type: application/json")
+            logger.info("="*80)
+            
             try:
                 import requests
                 
                 headers = {'Authorization': f'Bearer {token}'}
+                logger.info(f"Headers: {headers}")
                 
+                # Leer archivo una vez para logging
+                with open(file_path, 'rb') as file_content:
+                    file_data = file_content.read()
+                    logger.info(f"File size: {len(file_data)} bytes")
+                
+                # Enviar archivo
                 with open(file_path, 'rb') as f:
                     files = {'definitionsFile': (filename, f, 'application/json')}
+                    logger.info(f"Files payload key: definitionsFile")
+                    logger.info(f"Files payload value: (filename={filename}, file=FILE, content_type=application/json)")
+                    
+                    logger.info(f"Sending POST to: {controlm_api_url}")
+                    logger.info(f"Method: POST")
+                    logger.info(f"Content-Type: multipart/form-data (automatically set by requests library)")
                     
                     controlm_response = requests.post(
                         controlm_api_url,
@@ -212,7 +235,11 @@ def save_json():
                         timeout=30
                     )
                 
-                logger.info(f"Control-M response: {controlm_response.status_code}")
+                logger.info("="*80)
+                logger.info(f"Control-M response status: {controlm_response.status_code}")
+                logger.info(f"Control-M response headers: {dict(controlm_response.headers)}")
+                logger.info(f"Control-M response body: {controlm_response.text[:500]}")
+                logger.info("="*80)
                 
                 if controlm_response.status_code in [200, 201]:
                     response_data['controlm_status'] = 'success'

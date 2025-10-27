@@ -121,7 +121,7 @@ def list_files():
         }), 500
 
 if __name__ == '__main__':
-    # Solo para desarrollo local
+    # Para desarrollo local y Railway sin gunicorn
     port = int(os.environ.get('PORT', 5000))
     host = '0.0.0.0'
     
@@ -133,5 +133,6 @@ if __name__ == '__main__':
     print(f"   POST /save-json")
     print(f"   GET  /list-files")
     print()
-    app.run(host=host, port=port, debug=False)
+    # Usar threaded=True para producción
+    app.run(host=host, port=port, debug=False, threaded=True)
 

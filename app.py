@@ -63,12 +63,13 @@ def save_json():
         data = request.get_json(silent=True)
         logger.info(f"Request data from JSON: {data}")
         
-        # Si es GET, intentar leer el body directamente
-        if not data and request.method == 'GET':
+        # Si es GET, intentar leer el body directamente - FORZAR lectura
+        if not data:
             try:
-                raw_data = request.get_data(as_text=True)
-                logger.info(f"Raw body data: {raw_data}")
-                if raw_data:
+                raw_data = request.get_data(as_text=True, cache=True)
+                logger.info(f"Raw body data length: {len(raw_data) if raw_data else 0}")
+                if raw_data and raw_data.strip():
+                    logger.info(f"Raw body data: {raw_data[:500]}...")
                     data = json.loads(raw_data)
                     logger.info(f"Parsed data from raw body: {data}")
             except Exception as e:
@@ -146,12 +147,14 @@ def upload():
         # 1. Intentar JSON normal
         data = request.get_json(silent=True)
         
-        # 2. Si es GET, intentar leer el body raw
-        if not data and request.method == 'GET':
+        # 2. Si es GET, intentar leer el body raw - FORZAR lectura del body
+        if not data:
             try:
-                raw_data = request.get_data(as_text=True)
-                logger.info(f"Raw body data: {raw_data}")
-                if raw_data:
+                # Leer el body directamente del request stream
+                raw_data = request.get_data(as_text=True, cache=True)
+                logger.info(f"Raw body data length: {len(raw_data) if raw_data else 0}")
+                if raw_data and raw_data.strip():
+                    logger.info(f"Raw body data: {raw_data[:500]}...")  # Primeros 500 chars
                     data = json.loads(raw_data)
                     logger.info(f"Parsed data from raw body: {data}")
             except Exception as e:

@@ -131,21 +131,5 @@ def list_files():
             "details": str(e)
         }), 500
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    host = '0.0.0.0'
-    
-    print(f"\n>>> API iniciada en http://{host}:{port}")
-    print(f">>> Carpeta de guardado: {JIRA_FOLDER}")
-    print(f">>> Entorno: {'Railway' if IS_RAILWAY else 'Local'}")
-    print("\n>>> Endpoints disponibles:")
-    print(f"   GET  /")
-    print(f"   POST /save-json")
-    print(f"   GET  /list-files")
-    print()
-    
-    # Usar servidor básico que funciona en Railway
-    print(">>> Iniciando servidor...")
-    # Railway requires this specific configuration
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', port)), debug=False, use_reloader=False)
+# Railway uses gunicorn, no need for if __name__ == '__main__' block
 
